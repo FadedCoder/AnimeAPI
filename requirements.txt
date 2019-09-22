@@ -1,4 +1,5 @@
 django
+aiohttp[speedups]
 https://github.com/darklow/django-suit/tarball/v2
 django-admin-json-editor
 psycopg2-binary

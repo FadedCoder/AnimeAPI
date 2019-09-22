@@ -51,6 +51,8 @@ class EpisodeAdmin(admin.ModelAdmin):
     form = EpisodeForm
     raw_id_fields = ['next', 'previous']
     search_fields = ['number', 'slug', 'title', 'anime__title']
+    list_filter = ['anime__title']
+    suit_list_filter_horizontal = ['anime__title']
 
 
 class AnimeForm(forms.ModelForm):

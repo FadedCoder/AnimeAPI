@@ -1,11 +1,13 @@
 from celery.decorators import task
 from celery import group
 from datetime import datetime
-import requests
-import json
 from api import models
-from .utils import natural_keys, kwargs2dict
 from bs4 import BeautifulSoup
+from tornado import ioloop, httpclient
+from .utils import natural_keys, kwargs2dict
+import asyncio
+import aiohttp
+import json
 import re
 
 
@@ -14,8 +16,18 @@ mp4upload_id_regex = re.compile(r'https:\/\/mp4upload.com\/embed-(\w+).html')
 
 
 def animepahe_scraper(status):
-    r = requests.get('https://animepahe.com/anime')
-    soup = BeautifulSoup(r.text, 'html.parser')
+    asyncio.run(_animepahe_scraper(status))
+
+
+async def _animepahe_scraper(status):
+    async with aiohttp.ClientSession() as sess:
+        await _scrape_all(status, sess)
+
+
+async def _scrape_all(status, sess):
+    async with sess.get('https://animepahe.com/anime') as resp:
+        rtext = await resp.text()
+    soup = BeautifulSoup(rtext, 'html.parser')
     z = soup.find_all('ul', attrs={'role': 'tabpanel'})
     y = []
     for i in z:
@@ -27,17 +39,19 @@ def animepahe_scraper(status):
             anime = models.Anime.objects.get(title=title)
         except models.Anime.DoesNotExist:
             continue
-        r = requests.get(link)
-        aid = find_id_regex.findall(r.text)[0]
-        r = requests.get(f"https://animepahe.com/api?m=release&id={aid}&l=30&sort=episode_asc&page=1")  # noqa
-        _eplist = json.loads(r.text).get('data', None)
+        async with sess.get(link) as resp:
+            rtext = await resp.text()
+        aid = find_id_regex.findall(rtext)[0]
+        async with sess.get(f"https://animepahe.com/api?m=release&id={aid}&l=30&sort=episode_asc&page=1") as resp:  # noqa
+            _eplist = await resp.json()
+        _eplist = _eplist.get('data', None)
         if _eplist is None:
             continue
         epdata = []
         for i in _eplist:
             links = []
             providers = ['kwik', 'mp4upload', 'streamango', 'openload']
-            _link_set = [scrape_provider_for_links(i['id'], x) for x in providers]
+            _link_set = [await scrape_provider_for_links(i['id'], x, sess) for x in providers]
             for _links in _link_set:
                 if _links:
                     links += _links
@@ -83,9 +97,9 @@ def animepahe_scraper(status):
         })
 
 
-def scrape_provider_for_links(id, provider):
-    r = requests.get(f"https://animepahe.com/api?m=embed&id={id}&p={provider}")
-    data = json.loads(r.text)
+async def scrape_provider_for_links(id, provider, sess):
+    async with sess.get(f"https://animepahe.com/api?m=embed&id={id}&p={provider}") as resp:  # noqa
+        data = await resp.json()
     if data == []:  # Provider does not work for this anime.
         return
     _ed = list(data['data'].values())[0]
