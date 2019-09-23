@@ -87,12 +87,14 @@ async def _scrape_all(status, sess):
                 )
             except models.Episode.MultipleObjectsReturned:
                 continue
-            if prev.links:
-                prev.links = prev.links + epr['videos']
-            else:
-                prev.links = epr['videos']
-            prev.links = list({x['host']+x.get('quality', ''): x for x in prev.links}.values())
-            prev.save()
+            for x in epr['videos']:
+                models.Link.objects.update_or_create(
+                    episode=prev, host=x['host'], type=x['type'], quality=x.get('quality'),
+                    defaults=kwargs2dict(
+                        video_id=x['id'], episode=prev, host=x['host'],
+                        type=x['type'], quality=x.get('quality'),
+                    )
+                )
             eplist.append(prev)
         next = None
         for epr in reversed(eplist):

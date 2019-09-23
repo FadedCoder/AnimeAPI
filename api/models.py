@@ -46,7 +46,6 @@ class Episode(models.Model):
     date = models.DateTimeField(auto_now=True)
     image = models.URLField(blank=True, null=True)
     aired = models.CharField(max_length=50, blank=True, null=True)
-    links = JSONField(blank=True, null=True)
     next = models.ForeignKey(
         'self', on_delete=models.CASCADE,
         related_name='next_ep', blank=True, null=True)
@@ -62,6 +61,22 @@ class Episode(models.Model):
         super(Episode, self).save()
         self.slug = slugify(f"{self.id} {self.anime.title[:220]} Episode {self.number}"[:255])
         return super(Episode, self).save()
+
+
+class Link(models.Model):
+    TYPE_CHOICES = (
+        ('subbed', 'Subbed'),
+        ('dubbed', 'Dubbed'),
+    )
+    video_id = models.CharField(max_length=100)
+    host = models.CharField(max_length=200)
+    date = models.DateTimeField()
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    quality = models.CharField(max_length=20, blank=True, null=True)
+    episode = models.ForeignKey(Episode, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.episode.anime.title} Episode {self.episode.number} | {self.host}, {self.type}, {self.quality}"  # noqa
 
 
 class ApiToken(models.Model):

@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django import forms
-from django_admin_json_editor import JSONEditorWidget
 from . import models
 
 
@@ -8,48 +7,16 @@ class EpisodeForm(forms.ModelForm):
     class Meta:
         model = models.Episode
         fields = '__all__'
-        DATA_SCHEMA = {
-            "type": "array",
-            "format": "table",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "title": "Video ID",
-                        "type": "string",
-                    },
-                    "host": {
-                        "title": "Video Host",
-                        "type": "string",
-                    },
-                    "date": {
-                        "title": "Date",
-                        "type": "string",
-                    },
-                    "type": {
-                        "type": "array",
-                        "format": "checkbox",
-                        "uniqueItems": True,
-                        "items": {
-                            "type": "string",
-                            "enum": ["subbed", "dubbed"]
-                        }
-                    },
-                    "quality": {
-                        "title": "Quality",
-                        "type": "string",
-                    }
-                }
-            }
-        }
-        widgets = {
-            'links': JSONEditorWidget(DATA_SCHEMA, collapsed=False),
-        }
+
+
+class LinkAdminInline(admin.TabularInline):
+    model = models.Link
 
 
 class EpisodeAdmin(admin.ModelAdmin):
     form = EpisodeForm
-    raw_id_fields = ['next', 'previous']
+    inlines = [LinkAdminInline]
+    raw_id_fields = ['next', 'previous', 'anime']
     search_fields = ['number', 'slug', 'title', 'anime__title']
     list_filter = ['anime__title']
     suit_list_filter_horizontal = ['anime__title']
@@ -66,7 +33,19 @@ class AnimeAdmin(admin.ModelAdmin):
     search_fields = ['slug', 'title', 'mal_id', 'genres']
 
 
+class LinkForm(forms.ModelForm):
+    class Meta:
+        model = models.Link
+        fields = '__all__'
+
+
+class LinkAdmin(admin.ModelAdmin):
+    form = LinkForm
+    raw_id_fields = ['episode']
+
+
 # Register your models here.
 admin.site.register(models.Anime, AnimeAdmin)
 admin.site.register(models.Episode, EpisodeAdmin)
+admin.site.register(models.Link, LinkAdmin)
 admin.site.register(models.ApiToken)

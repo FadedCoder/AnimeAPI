@@ -1,9 +1,9 @@
 from django.core import serializers
 from django.http import HttpResponse, JsonResponse
-from django.forms.models import model_to_dict
 from django.db.models import F, Subquery
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector, TrigramSimilarity
 from time import sleep
+from itertools import chain
 import logging
 import json
 import datetime
@@ -82,6 +82,10 @@ def get_episode_by_id(request, episode_id):
     try:
         episode = models.Episode.objects.get(id=episode_id)
         data = model_to_dict(episode)
+        links = [model_to_dict(i, exclude=['id', 'episode']) for i in episode.link_set.all()]
+        for i in links:
+            i['id'] = i.pop('video_id')
+        data.update({'links': links})
         resp = {
             'status': 'FOUND',
             'data': data
@@ -100,6 +104,10 @@ def get_episode_by_slug(request, slug):
     try:
         episode = models.Episode.objects.get(slug=slug)
         data = model_to_dict(episode)
+        links = [model_to_dict(i, exclude=['id', 'episode']) for i in episode.link_set.all()]
+        for i in links:
+            i['id'] = i.pop('video_id')
+        data.update({'links': links})
         resp = {
             'status': 'FOUND',
             'data': data
@@ -117,7 +125,14 @@ def get_episode_by_slug(request, slug):
 def all_episodes_by_id(request, anime_id):
     try:
         anime = models.Anime.objects.get(id=anime_id)
-        data = list(anime.episode_set.all().values())
+        data = []
+        for i in anime.episode_set.all():
+            d = model_to_dict(i)
+            links = [model_to_dict(j, exclude=['id', 'episode']) for j in i.link_set.all()]
+            for j in links:
+                j['id'] = j.pop('video_id')
+            d.update({'links': links})
+            data.append(d)
         resp = {
             'status': 'FOUND',
             'data': data
@@ -221,19 +236,44 @@ def search(request):
 @api_login_required
 def latest_anime(request, num):
     data = {
-        'ongoing': [{'id': i.anime.id} for i in
-                    models.Episode.objects.filter(
-                        pk__in=Subquery(
-                            models.Episode.objects.distinct('anime__id').values('pk'),
-                        ),
-                        anime__status='ongoing',
-                    ).order_by('-date')[:num]],
-        'latest': [{'id': i.anime.id} for i in
-                   models.Episode.objects.filter(
-                        pk__in=Subquery(
-                            models.Episode.objects.distinct('anime__id').values('pk'),
-                        ),
-                    ).order_by('-date')[:num]]
+        'ongoing': {
+            'subbed':
+                [{'id': i.episode.anime.id} for i in
+                 models.Link.objects.filter(
+                     pk__in=Subquery(
+                         models.Link.objects.distinct('episode__anime__id').values('pk'),
+                     ),
+                     episode__anime__status='ongoing',
+                     type='subbed',
+                 ).order_by('-date')[:num]],
+            'dubbed':
+                [{'id': i.episode.anime.id} for i in
+                 models.Link.objects.filter(
+                     pk__in=Subquery(
+                         models.Link.objects.distinct('episode__anime__id').values('pk'),
+                     ),
+                     episode__anime__status='ongoing',
+                     type='dubbed',
+                 ).order_by('-date')[:num]],
+        },
+        'latest': {
+            'subbed':
+                [{'id': i.episode.anime.id} for i in
+                 models.Link.objects.filter(
+                     pk__in=Subquery(
+                         models.Link.objects.distinct('episode__anime__id').values('pk'),
+                     ),
+                     type='subbed',
+                 ).order_by('-date')[:num]],
+            'dubbed':
+                [{'id': i.episode.anime.id} for i in
+                 models.Link.objects.filter(
+                     pk__in=Subquery(
+                         models.Link.objects.distinct('episode__anime__id').values('pk'),
+                     ),
+                     type='dubbed',
+                 ).order_by('-date')[:num]],
+        }
     }
     resp = {
         'status': 'FOUND',
@@ -255,3 +295,17 @@ def list_genres(request):
     }
     status = 404
     return JsonResponse(resp, status=status, json_dumps_params={'indent': 2})
+
+
+def model_to_dict(instance, exclude=[]):
+    opts = instance._meta
+    data = {}
+    for f in chain(opts.concrete_fields, opts.private_fields):
+        if f.name in exclude:
+            continue
+        data[f.name] = f.value_from_object(instance)
+    for f in opts.many_to_many:
+        if f.name in exclude:
+            continue
+        data[f.name] = [i.id for i in f.value_from_object(instance)]
+    return data

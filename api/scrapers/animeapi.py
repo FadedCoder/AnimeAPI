@@ -60,12 +60,10 @@ def animeapi_scraper(status):
                         date=datetime.strptime(r['date'], '%Y-%m-%d %H:%M:%S') if r['date'] else None  # noqa
                     )
                 )
-                if prev.links:
-                    prev.links = prev.links + epr['videos']
-                else:
-                    prev.links = epr['videos']
-                prev.links = list({x['host']+x.get('quality', ''): x for x in prev.links}.values())
-                prev.save()
+                for x in epr['videos']:
+                    models.Link.objects.update_or_create(
+                        episode=prev, host=x['host'], type=x['type'], quality=x.get('quality'),
+                        defaults=kwargs2dict(video_id=x['id']))
                 eplist.append(prev)
             next = None
             for epr in reversed(eplist):
