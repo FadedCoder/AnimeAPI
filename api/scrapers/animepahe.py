@@ -3,7 +3,6 @@ from celery import group
 from datetime import datetime
 from api import models
 from bs4 import BeautifulSoup
-from tornado import ioloop, httpclient
 from .utils import natural_keys, kwargs2dict
 import asyncio
 import aiohttp
@@ -57,10 +56,15 @@ async def _scrape_all(status, sess):
                     links += _links
             if links == []:
                 continue
+            epn = i['episode']
+            if epn.isdigit():
+                epn = int(epn)
+            elif epn.replace('.','',1).isdigit() and epn.count('.') < 2:
+                epn = float(epn)
             epdata = [
                 {
                     'title': i.get('title', ''),
-                    'number': str(int(i['episode'])),
+                    'number': str(epn),
                     'videos': links,
                 }
                 for i in _eplist
