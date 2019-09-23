@@ -1,7 +1,7 @@
 from django.core import serializers
 from django.http import HttpResponse, JsonResponse
 from django.forms.models import model_to_dict
-from django.db.models import F
+from django.db.models import F, Subquery
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector, TrigramSimilarity
 from time import sleep
 import logging
@@ -221,10 +221,19 @@ def search(request):
 @api_login_required
 def latest_anime(request, num):
     data = {
-        'ongoing': [{'id': i['anime']} for i in
-                    models.Episode.objects.filter(anime__status='ongoing').order_by('anime', '-date').values('anime').distinct('anime')[:num]],  # noqa,
-        'latest': [{'id': i['anime']} for i in
-                   models.Episode.objects.order_by('anime', '-date').values('anime').distinct('anime')[:num]],  # noqa
+        'ongoing': [{'id': i.anime.id} for i in
+                    models.Episode.objects.filter(
+                        pk__in=Subquery(
+                            models.Episode.objects.distinct('anime__id').values('pk'),
+                        ),
+                        anime__status='ongoing',
+                    ).order_by('-date')[:num]],
+        'latest': [{'id': i.anime.id} for i in
+                   models.Episode.objects.filter(
+                        pk__in=Subquery(
+                            models.Episode.objects.distinct('anime__id').values('pk'),
+                        ),
+                    ).order_by('-date')[:num]]
     }
     resp = {
         'status': 'FOUND',
