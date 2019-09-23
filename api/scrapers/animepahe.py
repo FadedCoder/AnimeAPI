@@ -36,7 +36,7 @@ async def _scrape_all(status, sess):
     for enum, (title, link) in enumerate(rlist_items):
         try:
             anime = models.Anime.objects.get(title=title)
-        except models.Anime.DoesNotExist:
+        except (models.Anime.DoesNotExist, models.Anime.MultipleObjectsReturned):
             continue
         async with sess.get(link) as resp:
             rtext = await resp.text()
