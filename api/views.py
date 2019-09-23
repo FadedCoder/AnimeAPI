@@ -1,6 +1,7 @@
 from django.core import serializers
 from django.http import HttpResponse, JsonResponse
 from django.forms.models import model_to_dict
+from django.db.models import F
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector, TrigramSimilarity
 from time import sleep
 import logging
@@ -214,6 +215,22 @@ def search(request):
             'data': list(query.values()),
         }
         status = 200
+    return JsonResponse(resp, status=status, json_dumps_params={'indent': 2})
+
+
+@api_login_required
+def latest_anime(request, num):
+    data = {
+        'ongoing': [{'id': i['anime']} for i in
+                    models.Episode.objects.filter(anime__status='ongoing').order_by('anime', '-date').values('anime').distinct('anime')[:num]],  # noqa,
+        'latest': [{'id': i['anime']} for i in
+                   models.Episode.objects.order_by('anime', '-date').values('anime').distinct('anime')[:num]],  # noqa
+    }
+    resp = {
+        'status': 'FOUND',
+        'data': data,
+    }
+    status = 200
     return JsonResponse(resp, status=status, json_dumps_params={'indent': 2})
 
 

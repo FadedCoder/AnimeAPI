@@ -13,5 +13,6 @@ urlpatterns = [
     path('anime/<int:anime_id>/episodes/', views.all_episodes_by_id, name='all_episodes_by_id'),
     path('anime/slug/<str:slug>/episodes/', views.all_episodes_by_slug, name='all_episodes_by_slug'),
     path('anime/search/', views.search, name='search'),
+    path('anime/latest/<int:num>/', views.latest_anime, name='latest_anime'),
     path('genre/', views.list_genres, name='all_genres'),
 ]
