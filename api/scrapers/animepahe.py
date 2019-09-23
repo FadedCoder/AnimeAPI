@@ -40,7 +40,11 @@ async def _scrape_all(status, sess):
             continue
         async with sess.get(link) as resp:
             rtext = await resp.text()
-        aid = find_id_regex.findall(rtext)[0]
+        aid = find_id_regex.findall(rtext)
+        if len(aid) >= 1:
+            aid = [0]
+        else:
+            continue
         async with sess.get(f"https://animepahe.com/api?m=release&id={aid}&l=30&sort=episode_asc&page=1") as resp:  # noqa
             _eplist = await resp.json()
         _eplist = _eplist.get('data', None)
