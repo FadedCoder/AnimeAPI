@@ -92,7 +92,7 @@ async def _scrape_all(status, sess):
                     episode=prev, host=x['host'], type=x['type'], quality=x.get('quality'),
                     defaults=kwargs2dict(
                         video_id=x['id'], episode=prev, host=x['host'],
-                        type=x['type'], quality=x.get('quality'),
+                        type=x['type'], quality=x.get('quality'), date=x['date']
                     )
                 )
             eplist.append(prev)
