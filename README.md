@@ -17,6 +17,9 @@ sudo -u postgres -i
 createuser -P --interactive
 <Then enter a username and a password>
 createdb -U <username> <db name>
+psql <dbname>
+CREATE EXTENSION pg_trgm;
+CREATE EXTENSION hstore;
 ```
 After this is done, open [AnimeAPI/settings.py](https://github.com/FadedCoder/AnimeAPI/blob/master/AnimeAPI/settings.py#L79) and edit the DATABASE field. Enter your username, password and DB name.
 4. On the base folder of this project, install venv and all the requirements. Steps for Linux (and Bash):
