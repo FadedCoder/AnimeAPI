@@ -6,13 +6,13 @@ from time import time
 
 
 class Anime(models.Model):
-    title = models.CharField(max_length=400)
+    title = models.CharField(max_length=1000)
     slug = models.SlugField(max_length=250, allow_unicode=True)
     mal_id = models.IntegerField(blank=True, null=True)
     synopsis = models.TextField(blank=True, null=True)
-    english = models.CharField(max_length=400, blank=True, null=True)
-    japanese = models.CharField(max_length=400, blank=True, null=True)
-    synonyms = models.CharField(max_length=400, blank=True, null=True)
+    english = models.CharField(max_length=1000, blank=True, null=True)
+    japanese = models.CharField(max_length=1000, blank=True, null=True)
+    synonyms = models.CharField(max_length=1000, blank=True, null=True)
     type = models.CharField(max_length=50, blank=True, null=True)
     total = models.IntegerField(blank=True, null=True)
     status = models.CharField(max_length=100, blank=True, null=True)
@@ -38,11 +38,11 @@ class Anime(models.Model):
 class Episode(models.Model):
     anime = models.ForeignKey(Anime, on_delete=models.CASCADE)
     number = models.CharField(max_length=20)
-    title = models.CharField(max_length=400, blank=True, null=True)
+    title = models.CharField(max_length=1000, blank=True, null=True)
     slug = models.SlugField(max_length=250, allow_unicode=True)
     description = models.TextField(blank=True, null=True)
-    english_name = models.CharField(max_length=400, blank=True, null=True)
-    default_name = models.CharField(max_length=400, blank=True, null=True)
+    english_name = models.CharField(max_length=1000, blank=True, null=True)
+    default_name = models.CharField(max_length=1000, blank=True, null=True)
     date = models.DateTimeField(auto_now=True)
     image = models.URLField(blank=True, null=True)
     aired = models.CharField(max_length=50, blank=True, null=True)
