@@ -65,14 +65,13 @@ async def _scrape_all(status, sess):
                 epn = int(epn)
             elif epn.replace('.','',1).isdigit() and epn.count('.') < 2:
                 epn = float(epn)
-            epdata = [
+            epdata.append(
                 {
                     'title': i.get('title', ''),
                     'number': str(epn),
                     'videos': links,
                 }
-                for i in _eplist
-            ]
+            )
         prev = None
         eplist = []
         for epr in sorted(epdata, key=natural_keys):
